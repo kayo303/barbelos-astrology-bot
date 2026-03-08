@@ -210,7 +210,7 @@ def build_multiplayer_embed(
         raise ValueError("최소 한 가지 이상 선택해야 합니다.")
 
     embed = discord.Embed(
-        title="🎲 바르벨로스의 다인게임 추첨",
+        title="🎲 바르벨로스의 조합 추첨",
         description=f"별의 장난이 **{user_name}**에게 새로운 조건을 내렸습니다.",
         color=discord.Color.from_rgb(122, 102, 196),
     )
@@ -251,7 +251,7 @@ def build_strong_enemy_embed(user_name: str, count: int, selected_enemies: list[
 
 def build_character_embed(user_name: str, count: int, selected_characters: list[str]) -> discord.Embed:
     embed = discord.Embed(
-        title="🎭 바르벨로스의 플레이 캐릭터 추첨",
+        title="🎭 바르벨로스의 캐릭터 추첨",
         description=f"**{user_name}**에게 내려진 인연의 이름입니다.",
         color=discord.Color.from_rgb(110, 92, 170),
     )
