@@ -268,7 +268,6 @@ def build_character_embed(user_name: str, count: int, selected_characters: list[
         value=value,
         inline=False,
     )
-    embed.set_footer(text="랜덤 플레이 캐릭터 추첨")
     return embed
 
 
