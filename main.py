@@ -45,7 +45,7 @@ def score_bar(score: int) -> str:
     filled = round(score / 10)
     filled = max(1, min(10, filled))
     empty = 10 - filled
-    return f"{'◆' * filled}{'◇' * empty} `{score}`"
+    return f"{'✦' * filled}{'✧' * empty} `{score}`"
 
 
 def get_score_comment(score: int) -> str:
