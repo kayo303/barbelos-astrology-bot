@@ -333,7 +333,7 @@ async def astrology(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@bot.tree.command(name="다인게임", description="원소 / 무기 / 지역 조합을 랜덤 추첨합니다.")
+@bot.tree.command(name="조합", description="원소 / 무기 / 지역 조합을 랜덤 추첨합니다.")
 @app_commands.describe(
     원소="원소를 추첨할지 선택합니다.",
     무기="무기를 함께 추첨할지 선택합니다.",
