@@ -141,23 +141,23 @@ def build_embed(result: dict, user_name: str) -> discord.Embed:
     )
 
     embed.add_field(
-        name="🔥 오늘의 원소",
+        name="✦ 오늘의 원소",
         value=f"**{result['element_name']}**\n{result['element_text']}",
         inline=False,
     )
     embed.add_field(
-        name="🗺️ 오늘의 지역",
+        name="✦ 오늘의 지역",
         value=f"**{result['region_name']}**\n{result['region_text']}",
         inline=False,
     )
     embed.add_field(
-        name="⚔️ 오늘의 무기",
+        name="✦ 오늘의 무기",
         value=f"**{result['weapon_name']}**\n{result['weapon_text']}",
         inline=False,
     )
 
     embed.add_field(
-        name="🔮 종합 점성 결과",
+        name="✦ 종합 점성 결과",
         value=result["overall"],
         inline=False,
     )
@@ -172,7 +172,7 @@ def build_embed(result: dict, user_name: str) -> discord.Embed:
     ]
 
     embed.add_field(
-        name="📜 세부 흐름",
+        name="✦ 세부 흐름",
         value="\n".join(flow_lines),
         inline=False,
     )
