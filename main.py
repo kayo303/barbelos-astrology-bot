@@ -22,6 +22,12 @@ from data import (
     challenge_rules,
 )
 
+ALLOWED_GUILDS = [
+    int(guild_id) 
+    for guild_id in os.getenv("ALLOWED_GUILDS", "").split(",") 
+    if guild_id
+]
+
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
