@@ -1,13 +1,26 @@
 import os
 import random
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from dotenv import load_dotenv
 
-from data import system_texts, element_texts, region_texts, weapon_texts
+from data import (
+    system_texts,
+    element_texts,
+    region_texts,
+    weapon_texts,
+    element_pool,
+    weapon_pool,
+    region_pool,
+    strong_enemies,
+    playable_characters,
+    challenge_rules,
+)
 
 load_dotenv()
 
@@ -61,7 +74,6 @@ def get_score_comment(score: int) -> str:
 
 
 def build_overall_message(element_name: str, region_name: str, weapon_name: str, brightness: int) -> str:
-    tone = ""
     if brightness >= 85:
         tone = "오늘의 별빛은 유난히 선명합니다. 직감이 가리키는 방향을 믿어도 좋습니다."
     elif brightness >= 65:
@@ -122,21 +134,16 @@ def generate_astrology(user_id: int):
     }
 
 
-def build_embed(result: dict, user_name: str) -> discord.Embed:
+def build_astrology_embed(result: dict, user_name: str) -> discord.Embed:
     embed = discord.Embed(
         title=system_texts["title"],
-        description=(
-            f"별과 원소의 흐름을 따라, 오늘 **{user_name}**에게 닿는 징조를 읽어드립니다.\n"
-        ),
+        description=f"별과 원소의 흐름을 따라, 오늘 **{user_name}**에게 닿는 징조를 읽어드립니다.",
         color=discord.Color.from_rgb(88, 72, 156),
     )
 
     embed.add_field(
         name="✦ 오늘의 별빛",
-        value=(
-            f"**별의 밝기 {result['brightness']}**\n"
-            f"{score_bar(result['brightness'])}"
-        ),
+        value=f"**별의 밝기 {result['brightness']}**\n{score_bar(result['brightness'])}",
         inline=False,
     )
 
@@ -178,12 +185,139 @@ def build_embed(result: dict, user_name: str) -> discord.Embed:
     )
 
     embed.set_footer(
-        text=(
-            f"{result['kst_display_date']} · KST 기준 "
-            f"· {system_texts['footer']}"
-        )
+        text=f"{result['kst_display_date']} · KST 기준 · {system_texts['footer']}"
     )
 
+    return embed
+
+
+def build_multiplayer_embed(
+    user_name: str,
+    include_element: bool,
+    include_weapon: bool,
+    include_region: bool,
+):
+    picks = []
+
+    if include_element:
+        picks.append(("원소", random.choice(element_pool)))
+    if include_weapon:
+        picks.append(("무기", random.choice(weapon_pool)))
+    if include_region:
+        picks.append(("지역", random.choice(region_pool)))
+
+    if not picks:
+        raise ValueError("최소 한 가지 이상 선택해야 합니다.")
+
+    embed = discord.Embed(
+        title="🎲 바르벨로스의 다인게임 추첨",
+        description=f"별의 장난이 **{user_name}**에게 새로운 조건을 내렸습니다.",
+        color=discord.Color.from_rgb(122, 102, 196),
+    )
+
+    for name, value in picks:
+        if name == "원소":
+            icon = "🔥"
+        elif name == "무기":
+            icon = "⚔️"
+        else:
+            icon = "🗺️"
+
+        embed.add_field(
+            name=f"{icon} {name}",
+            value=f"**{value}**",
+            inline=False,
+        )
+
+    embed.set_footer(text="해당 조건에 맞는 캐릭터로 플레이")
+    return embed
+
+
+def build_strong_enemy_embed(user_name: str, count: int, selected_enemies: list[str]) -> discord.Embed:
+    embed = discord.Embed(
+        title="⚔️ 바르벨로스의 강적 추첨",
+        description=f"**{user_name}** 앞에 나타난 상대입니다.",
+        color=discord.Color.from_rgb(150, 72, 90),
+    )
+
+    lines = [f"**{idx}.** {name}" for idx, name in enumerate(selected_enemies, start=1)]
+
+    embed.add_field(
+        name=f"⚔️ 등장한 강적 ({count})",
+        value="\n".join(lines),
+        inline=False,
+    )
+    embed.set_footer(text="강적 랜덤 추첨")
+    return embed
+
+
+def build_character_embed(user_name: str, count: int, selected_characters: list[str]) -> discord.Embed:
+    embed = discord.Embed(
+        title="🎭 바르벨로스의 플레이 캐릭터 추첨",
+        description=f"**{user_name}**에게 내려진 인연의 이름입니다.",
+        color=discord.Color.from_rgb(110, 92, 170),
+    )
+
+    if count == 1:
+        value = f"**{selected_characters[0]}**"
+    else:
+        value = "\n".join(
+            [f"**{idx}.** {name}" for idx, name in enumerate(selected_characters, start=1)]
+        )
+
+    embed.add_field(
+        name="✦ 추첨 결과",
+        value=value,
+        inline=False,
+    )
+    embed.set_footer(text="랜덤 플레이 캐릭터 추첨")
+    return embed
+
+
+def build_challenge_embed(user_name: str, character: str, enemy: str, rule: str) -> discord.Embed:
+    embed = discord.Embed(
+        title="🌙 바르벨로스의 티바트 챌린지",
+        description=f"별의 흐름이 **{user_name}**에게 이런 시험을 건넸습니다.",
+        color=discord.Color.from_rgb(90, 76, 156),
+    )
+
+    embed.add_field(name="🎭 캐릭터", value=f"**{character}**", inline=False)
+    embed.add_field(name="⚔️ 강적", value=f"**{enemy}**", inline=False)
+    embed.add_field(name="📜 제한 조건", value=f"**{rule}**", inline=False)
+
+    embed.set_footer(text="명령어를 다시 입력할 때마다 결과가 바뀝니다.")
+    return embed
+
+
+def parse_number_inputs(raw_text: str) -> list[int]:
+    parts = re.split(r"[,\s/]+", raw_text.strip())
+    numbers = []
+
+    for part in parts:
+        if not part:
+            continue
+        numbers.append(int(part))
+
+    return numbers
+
+
+def build_number_lottery_embed(user_name: str, totals: list[int], results: list[int]) -> discord.Embed:
+    embed = discord.Embed(
+        title="🔢 바르벨로스의 번호 추첨",
+        description=f"별이 **{user_name}**에게 아래의 수를 건네주었습니다.",
+        color=discord.Color.from_rgb(96, 132, 196),
+    )
+
+    lines = []
+    for idx, (total, result) in enumerate(zip(totals, results), start=1):
+        lines.append(f"**{idx}.** 1 ~ {total} → **{result}**")
+
+    embed.add_field(
+        name="✦ 추첨 결과",
+        value="\n".join(lines),
+        inline=False,
+    )
+    embed.set_footer(text="입력한 전체수마다 1부터 해당 수까지 중 하나를 추첨")
     return embed
 
 
@@ -200,7 +334,138 @@ async def on_ready():
 @bot.tree.command(name="점성술", description="바르벨로스의 오늘의 점성술을 확인합니다.")
 async def astrology(interaction: discord.Interaction):
     result = generate_astrology(interaction.user.id)
-    embed = build_embed(result, interaction.user.display_name)
+    embed = build_astrology_embed(result, interaction.user.display_name)
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="다인게임", description="원소 / 무기 / 지역 조합을 랜덤 추첨합니다.")
+@app_commands.describe(
+    원소="원소를 추첨할지 선택합니다.",
+    무기="무기를 함께 추첨할지 선택합니다.",
+    지역="지역을 함께 추첨할지 선택합니다.",
+)
+async def multiplayer_game(
+    interaction: discord.Interaction,
+    원소: bool = True,
+    무기: bool = False,
+    지역: bool = False,
+):
+    try:
+        embed = build_multiplayer_embed(
+            user_name=interaction.user.display_name,
+            include_element=원소,
+            include_weapon=무기,
+            include_region=지역,
+        )
+        await interaction.response.send_message(embed=embed)
+    except ValueError:
+        await interaction.response.send_message(
+            "최소 한 가지는 선택해야 합니다. 예: 원소만 / 원소+무기 / 원소+지역 / 전부",
+            ephemeral=True,
+        )
+
+
+@bot.tree.command(name="강적", description="강적을 원하는 수만큼 랜덤 추첨합니다.")
+@app_commands.describe(개수="추첨할 강적 수를 입력하세요.")
+async def strong_enemy(interaction: discord.Interaction, 개수: app_commands.Range[int, 1, 9]):
+    if not strong_enemies:
+        await interaction.response.send_message(
+            "강적 목록이 비어 있습니다. data.py의 strong_enemies를 먼저 채워 주세요.",
+            ephemeral=True,
+        )
+        return
+
+    if 개수 > len(strong_enemies):
+        await interaction.response.send_message(
+            f"현재 등록된 강적은 {len(strong_enemies)}개입니다. 그 이하의 수를 입력해 주세요.",
+            ephemeral=True,
+        )
+        return
+
+    selected = random.sample(strong_enemies, k=개수)
+    embed = build_strong_enemy_embed(interaction.user.display_name, 개수, selected)
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="추첨", description="입력한 전체수 범위 안에서 번호를 랜덤 추첨합니다.")
+@app_commands.describe(전체수="예: 100 또는 10 50 100 처럼 여러 개 입력 가능")
+async def number_lottery(interaction: discord.Interaction, 전체수: str):
+    try:
+        totals = parse_number_inputs(전체수)
+    except ValueError:
+        await interaction.response.send_message(
+            "숫자만 입력해 주세요. 예: `100` 또는 `10 50 100`",
+            ephemeral=True,
+        )
+        return
+
+    if not totals:
+        await interaction.response.send_message(
+            "최소 한 개 이상의 숫자를 입력해 주세요.",
+            ephemeral=True,
+        )
+        return
+
+    if any(n < 1 for n in totals):
+        await interaction.response.send_message(
+            "전체수는 1 이상의 정수만 입력할 수 있습니다.",
+            ephemeral=True,
+        )
+        return
+
+    if len(totals) > 20:
+        await interaction.response.send_message(
+            "한 번에 최대 20개까지 입력할 수 있습니다.",
+            ephemeral=True,
+        )
+        return
+
+    results = [random.randint(1, total) for total in totals]
+    embed = build_number_lottery_embed(interaction.user.display_name, totals, results)
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="캐릭터", description="플레이어블 캐릭터를 랜덤 추첨합니다.")
+@app_commands.describe(개수="몇 명을 뽑을지 입력하세요. 기본값은 1입니다.")
+async def character(interaction: discord.Interaction, 개수: app_commands.Range[int, 1, 10] = 1):
+    if not playable_characters:
+        await interaction.response.send_message(
+            "캐릭터 목록이 비어 있습니다. data.py의 playable_characters를 먼저 채워 주세요.",
+            ephemeral=True,
+        )
+        return
+
+    if 개수 > len(playable_characters):
+        await interaction.response.send_message(
+            f"현재 등록된 캐릭터는 {len(playable_characters)}명입니다. 그 이하의 수를 입력해 주세요.",
+            ephemeral=True,
+        )
+        return
+
+    selected = random.sample(playable_characters, k=개수)
+    embed = build_character_embed(interaction.user.display_name, 개수, selected)
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="챌린지", description="캐릭터, 강적, 제한 조건을 랜덤으로 추첨합니다.")
+async def challenge(interaction: discord.Interaction):
+    if not playable_characters or not strong_enemies or not challenge_rules:
+        await interaction.response.send_message(
+            "챌린지에 필요한 데이터가 비어 있습니다. data.py를 확인해 주세요.",
+            ephemeral=True,
+        )
+        return
+
+    selected_character = random.choice(playable_characters)
+    selected_enemy = random.choice(strong_enemies)
+    selected_rule = random.choice(challenge_rules)
+
+    embed = build_challenge_embed(
+        user_name=interaction.user.display_name,
+        character=selected_character,
+        enemy=selected_enemy,
+        rule=selected_rule,
+    )
     await interaction.response.send_message(embed=embed)
 
 
@@ -208,7 +473,7 @@ async def astrology(interaction: discord.Interaction):
 async def ping(interaction: discord.Interaction):
     now_text = get_kst_now().strftime("%Y-%m-%d %H:%M:%S")
     await interaction.response.send_message(
-        f"퐁! 바르벨로스가 별의 흐름을 관측 중입니다.\n현재 한국 시간: `{now_text} KST`"
+        f"바르벨로스가 별의 흐름을 관측 중입니다.\n현재 한국 시간: `{now_text} KST`"
     )
 
 
