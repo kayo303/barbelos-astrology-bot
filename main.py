@@ -127,7 +127,6 @@ def build_embed(result: dict, user_name: str) -> discord.Embed:
         title=system_texts["title"],
         description=(
             f"별과 원소의 흐름을 따라, 오늘 **{user_name}**에게 닿는 징조를 읽어드립니다.\n"
-            f"> 같은 사용자는 **한국 시간 자정 전까지** 같은 결과를 받습니다."
         ),
         color=discord.Color.from_rgb(88, 72, 156),
     )
