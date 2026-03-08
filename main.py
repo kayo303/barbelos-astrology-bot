@@ -228,8 +228,6 @@ def build_multiplayer_embed(
             value=f"**{value}**",
             inline=False,
         )
-
-    embed.set_footer(text="해당 조건에 맞는 캐릭터로 플레이")
     return embed
 
 
@@ -285,7 +283,6 @@ def build_challenge_embed(user_name: str, character: str, enemy: str, rule: str)
     embed.add_field(name="⚔️ 강적", value=f"**{enemy}**", inline=False)
     embed.add_field(name="📜 제한 조건", value=f"**{rule}**", inline=False)
 
-    embed.set_footer(text="명령어를 다시 입력할 때마다 결과가 바뀝니다.")
     return embed
 
 
@@ -317,7 +314,6 @@ def build_number_lottery_embed(user_name: str, totals: list[int], results: list[
         value="\n".join(lines),
         inline=False,
     )
-    embed.set_footer(text="입력한 전체수마다 1부터 해당 수까지 중 하나를 추첨")
     return embed
 
 
